@@ -1,0 +1,4 @@
+# Ao acessar /admin ou /admin/ diretamente (sem especificar um arquivo),
+# serve login.php automaticamente em vez de mostrar listagem de diretório
+# ou erro. Basta o mod_dir, que já vem habilitado por padrão no Apache.
+DirectoryIndex login.php

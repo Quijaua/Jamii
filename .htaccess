@@ -1,0 +1,14 @@
+# Redireciona /admin ou /admin/ para /admin/login.php
+RewriteEngine On
+RewriteRule ^admin/?$ admin/login.php [L,R=302]
+
+# Bloqueia acesso direto ao banco de dados SQLite via navegador
+<FilesMatch "\.sqlite$">
+    Require all denied
+</FilesMatch>
+
+# Bloqueia acesso direto ao arquivo de configuração via navegador
+<FilesMatch "^config\.php$">
+    Require all denied
+</FilesMatch>
+ 

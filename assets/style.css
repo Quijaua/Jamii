@@ -1,0 +1,83 @@
+body {
+    background-color: #eef1f5;
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+.brand-header {
+    background-color: #1565c0;
+    color: #fff;
+    padding: 28px 0;
+    margin-bottom: 32px;
+}
+
+.brand-header h4 {
+    margin: 0;
+    font-weight: 500;
+}
+
+.brand-header p {
+    margin: 4px 0 0;
+    opacity: .9;
+}
+
+.form-card {
+    padding: 8px 16px 24px;
+}
+
+.section-title {
+    color: #1565c0;
+    border-bottom: 2px solid #1565c0;
+    padding-bottom: 6px;
+    margin-top: 32px !important;
+    margin-bottom: 16px;
+}
+
+.declaracao-box {
+    background: #f5f5f5;
+    border-left: 4px solid #1565c0;
+    padding: 16px;
+    border-radius: 4px;
+    margin: 24px 0;
+}
+
+.footer-note {
+    text-align: center;
+    color: #78909c;
+    font-size: .85rem;
+    margin: 32px 0;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+/* Backoffice */
+.admin-nav {
+    margin-bottom: 24px;
+}
+
+table.striped td, table.striped th {
+    font-size: .9rem;
+}
+
+.actions-cell a {
+    margin-right: 12px;
+}
+
+.badge-yes {
+    background-color: #43a047;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: .75rem;
+}
+
+.badge-no {
+    background-color: #e53935;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: .75rem;
+}
