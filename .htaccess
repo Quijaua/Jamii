@@ -7,7 +7,10 @@ RewriteRule ^admin/?$ admin/login.php [L,R=302]
     Require all denied
 </FilesMatch>
 
-# Bloqueia acesso direto ao arquivo de configuração via navegador
+# Bloqueia acesso direto ao arquivo de configuração via navegador.
+# Atenção: esta regra vale para esta pasta E para todas as subpastas — por isso
+# a tela de configurações do painel se chama admin/configuracoes.php, e não
+# admin/config.php: com o nome antigo ela cairia neste bloqueio e daria 403.
 <FilesMatch "^config\.php$">
     Require all denied
 </FilesMatch>

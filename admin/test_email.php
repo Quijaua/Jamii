@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h4>Testar envio de e-mail</h4>
             </div>
             <div class="col s4 right-align">
-                <a href="config.php" class="btn-flat white-text">
+                <a href="configuracoes.php" class="btn-flat white-text">
                     <i class="material-icons left">arrow_back</i> Voltar
                 </a>
             </div>

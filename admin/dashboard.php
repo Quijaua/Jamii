@@ -67,7 +67,7 @@ $metaAtingida = $meta > 0 && $fundadoresAssinados >= $meta;
                 <p>Logado como: <?= htmlspecialchars($_SESSION['admin_email']) ?></p>
             </div>
             <div class="col s4 right-align">
-                <a href="config.php" class="btn-flat white-text">
+                <a href="configuracoes.php" class="btn-flat white-text">
                     <i class="material-icons left">settings</i> Configurações
                 </a>
                 <a href="logout.php?<?= csrfParametro() ?>" class="btn-flat white-text">
@@ -94,7 +94,7 @@ $metaAtingida = $meta > 0 && $fundadoresAssinados >= $meta;
                     <div class="determinate green darken-1" style="width: <?= $percentualAssinado ?>%"></div>
                 </div>
                 <p class="grey-text" style="margin-bottom: 0;">
-                    <a href="config.php">Ver detalhes e ajustar meta</a>
+                    <a href="configuracoes.php">Ver detalhes e ajustar meta</a>
                 </p>
             </div>
         </div>
@@ -113,7 +113,7 @@ $metaAtingida = $meta > 0 && $fundadoresAssinados >= $meta;
         <?php else: ?>
             <span class="badge-yes">Abertas</span>
         <?php endif; ?>
-        &nbsp; <a href="config.php">alterar</a>
+        &nbsp; <a href="configuracoes.php">alterar</a>
     </div>
 
     <form method="GET" class="row admin-nav">

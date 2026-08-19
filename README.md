@@ -73,7 +73,7 @@ desse campo são migradas automaticamente como "Fundador(a)".
 - **CEP no início** do bloco de endereço, com **preenchimento automático**
   de logradouro, bairro, cidade e estado via ViaCEP assim que a pessoa
   digita o CEP (ela pode revisar/corrigir antes de enviar).
-- **Página de Configurações** no backoffice (`admin/config.php`), onde você
+- **Página de Configurações** no backoffice (`admin/configuracoes.php`), onde você
   define a meta de associados fundadores esperada e acompanha visualmente
   (barra de progresso) quantos já preencheram e quantos já assinaram a
   declaração — com uma mensagem de destaque quando a meta é atingida.
@@ -94,8 +94,10 @@ associacao/
 ├── admin/
 │   ├── login.php               <- tela de login
 │   ├── logout.php
-│   ├── dashboard.php           <- listagem de membros + busca + exportar
+│   ├── dashboard.php           <- listagem de membros + busca/filtro + exportar
 │   ├── view.php                <- editar/excluir um membro
+│   ├── configuracoes.php       <- formulário, assembleia, meta e e-mail
+│   ├── test_email.php          <- teste de envio de e-mail
 │   └── export.php              <- gera e baixa o .xlsx
 ├── index.php                  <- formulário público
 ├── submit.php                 <- processa o formulário (grava + envia e-mail)
