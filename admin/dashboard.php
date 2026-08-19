@@ -5,21 +5,48 @@ $config = require __DIR__ . '/../config/config.php';
 
 $pdo = getDB();
 $busca = trim($_GET['busca'] ?? '');
+$filtroVinculo = trim($_GET['vinculo'] ?? '');
+
+// Só aceita um vínculo conhecido como filtro; qualquer outra coisa é ignorada.
+if ($filtroVinculo !== '' && !in_array($filtroVinculo, todosOsVinculos(), true)) {
+    $filtroVinculo = '';
+}
+
+$where = [];
+$params = [];
 
 if ($busca !== '') {
-    $stmt = $pdo->prepare("SELECT * FROM members WHERE nome_completo LIKE :busca OR cpf LIKE :busca OR email LIKE :busca ORDER BY created_at DESC");
-    $stmt->execute([':busca' => "%$busca%"]);
-} else {
-    $stmt = $pdo->query("SELECT * FROM members ORDER BY created_at DESC");
+    $where[] = '(nome_completo LIKE :busca OR cpf LIKE :busca OR email LIKE :busca)';
+    $params[':busca'] = "%$busca%";
 }
+if ($filtroVinculo !== '') {
+    $where[] = 'vinculo = :vinculo';
+    $params[':vinculo'] = $filtroVinculo;
+}
+
+$sql = 'SELECT * FROM members';
+if ($where) {
+    $sql .= ' WHERE ' . implode(' AND ', $where);
+}
+$sql .= ' ORDER BY created_at DESC';
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $membros = $stmt->fetchAll();
 
 $settings = getSettings();
 $meta = (int)$settings['meta_associados'];
-$totalPreenchidas = count($pdo->query('SELECT id FROM members')->fetchAll());
-$totalAssinadas = (int)$pdo->query('SELECT COUNT(*) AS total FROM members WHERE declaracao_aceite = 1')->fetch()['total'];
-$percentualAssinado = $meta > 0 ? min(100, round(($totalAssinadas / $meta) * 100)) : 0;
-$metaAtingida = $meta > 0 && $totalAssinadas >= $meta;
+$aberto = formularioAberto($settings);
+$encerrouFundadores = fundadoresEncerrados($settings);
+
+// A meta se refere aos fundadores — associados cadastrados depois da assembleia
+// não entram na conta (ver contaComoFundador() em includes/inscricao.php).
+$stmtFA = $pdo->prepare('SELECT COUNT(*) AS total FROM members WHERE declaracao_aceite = 1 AND COALESCE(vinculo, ?) <> ?');
+$stmtFA->execute([VINCULO_FUNDADOR, VINCULO_ASSOCIADO]);
+$fundadoresAssinados = (int)$stmtFA->fetch()['total'];
+
+$percentualAssinado = $meta > 0 ? min(100, round(($fundadoresAssinados / $meta) * 100)) : 0;
+$metaAtingida = $meta > 0 && $fundadoresAssinados >= $meta;
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -62,7 +89,7 @@ $metaAtingida = $meta > 0 && $totalAssinadas >= $meta;
         <div class="card">
             <div class="card-content">
                 <span class="card-title" style="font-size: 1.1rem;">Progresso de assinaturas</span>
-                <p><?= $totalAssinadas ?> de <?= $meta ?> associados já assinaram a declaração (<?= $percentualAssinado ?>%)</p>
+                <p><?= $fundadoresAssinados ?> de <?= $meta ?> fundadores já assinaram a declaração (<?= $percentualAssinado ?>%)</p>
                 <div class="progress">
                     <div class="determinate green darken-1" style="width: <?= $percentualAssinado ?>%"></div>
                 </div>
@@ -73,27 +100,58 @@ $metaAtingida = $meta > 0 && $totalAssinadas >= $meta;
         </div>
     <?php endif; ?>
 
-    <div class="row admin-nav">
-        <div class="col s12 m8">
-            <form method="GET" class="input-field" style="margin-bottom:0;">
-                <input type="text" name="busca" placeholder="Buscar por nome, CPF ou e-mail" value="<?= htmlspecialchars($busca) ?>">
-            </form>
+    <div class="card-panel <?= $aberto ? 'blue lighten-5' : 'amber lighten-4' ?>" style="padding: 12px 20px;">
+        Formulário público:
+        <?php if ($aberto): ?>
+            <span class="badge-yes">Aberto</span>
+        <?php else: ?>
+            <span class="badge-no">Fechado</span>
+        <?php endif; ?>
+        &nbsp;·&nbsp; Inscrições de fundador:
+        <?php if ($encerrouFundadores): ?>
+            <span class="badge-no">Encerradas</span>
+        <?php else: ?>
+            <span class="badge-yes">Abertas</span>
+        <?php endif; ?>
+        &nbsp; <a href="config.php">alterar</a>
+    </div>
+
+    <form method="GET" class="row admin-nav">
+        <div class="input-field col s12 m5">
+            <input id="busca" type="text" name="busca" placeholder="Nome, CPF ou e-mail" value="<?= htmlspecialchars($busca) ?>">
+            <label for="busca" class="active">Buscar</label>
         </div>
-        <div class="col s12 m4 right-align">
-            <a href="export.php" class="btn waves-effect waves-light green darken-1">
-                Baixar XLSX <i class="material-icons right">download</i>
+        <div class="input-field col s12 m4">
+            <select name="vinculo">
+                <option value="" <?= $filtroVinculo === '' ? 'selected' : '' ?>>Todos os vínculos</option>
+                <?php foreach (todosOsVinculos() as $v): ?>
+                    <option value="<?= htmlspecialchars($v) ?>" <?= $filtroVinculo === $v ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($v) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <label>Vínculo</label>
+        </div>
+        <div class="col s12 m3 right-align" style="padding-top: 20px;">
+            <button class="btn waves-effect waves-light blue darken-1" type="submit">
+                Filtrar <i class="material-icons right">search</i>
+            </button>
+            <a href="export.php<?= $filtroVinculo !== '' ? '?vinculo=' . urlencode($filtroVinculo) : '' ?>"
+               class="btn waves-effect waves-light green darken-1" style="margin-top: 8px;">
+                XLSX <i class="material-icons right">download</i>
             </a>
         </div>
-    </div>
+    </form>
 
     <div class="card">
         <div class="card-content">
-            <span class="card-title">Membros fundadores (<?= count($membros) ?>)</span>
+            <span class="card-title">Fichas recebidas (<?= count($membros) ?>)</span>
 
             <table class="striped highlight responsive-table">
                 <thead>
                 <tr>
                     <th>Nome completo</th>
+                    <th>Vínculo</th>
                     <th>CPF</th>
                     <th>CIN</th>
                     <th>E-mail</th>
@@ -105,11 +163,21 @@ $metaAtingida = $meta > 0 && $totalAssinadas >= $meta;
                 </thead>
                 <tbody>
                 <?php if (empty($membros)): ?>
-                    <tr><td colspan="8">Nenhuma ficha encontrada.</td></tr>
+                    <tr><td colspan="9">Nenhuma ficha encontrada.</td></tr>
                 <?php endif; ?>
                 <?php foreach ($membros as $m): ?>
+                    <?php $vinculo = trim((string)($m['vinculo'] ?? '')); ?>
                     <tr>
                         <td><?= htmlspecialchars($m['nome_completo']) ?></td>
+                        <td>
+                            <?php if ($vinculo === ''): ?>
+                                <span class="grey-text">—</span>
+                            <?php else: ?>
+                                <span class="badge-vinculo <?= $vinculo === VINCULO_ASSOCIADO ? 'associado' : '' ?>">
+                                    <?= htmlspecialchars($vinculo) ?>
+                                </span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= htmlspecialchars($m['cpf']) ?></td>
                         <td><?= htmlspecialchars($m['cin'] ?? '') ?></td>
                         <td><?= htmlspecialchars($m['email']) ?></td>
@@ -132,5 +200,11 @@ $metaAtingida = $meta > 0 && $totalAssinadas >= $meta;
         </div>
     </div>
 </main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        M.FormSelect.init(document.querySelectorAll('select'));
+    });
+</script>
 </body>
 </html>

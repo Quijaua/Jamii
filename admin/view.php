@@ -20,12 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'excluir
 // Atualização
 $sucesso = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'salvar') {
-    $campos = ['nome_completo','nacionalidade','estado_civil','profissao','cpf','rg_numero','rg_orgao','cin',
+    $campos = ['vinculo','nome_completo','nacionalidade','estado_civil','profissao','cpf','rg_numero','rg_orgao','cin',
                'email','telefone','logradouro','numero','complemento','bairro','cidade','estado','cep','local_data'];
 
     $valores = [];
     foreach ($campos as $c) {
         $valores[$c] = trim($_POST[$c] ?? '');
+    }
+
+    // O vínculo tem que ser um dos valores conhecidos; qualquer outra coisa vira vazio.
+    if (!in_array($valores['vinculo'], todosOsVinculos(), true)) {
+        $valores['vinculo'] = '';
     }
     $declaracao = isset($_POST['declaracao_aceite']) ? 1 : 0;
 
@@ -86,6 +91,18 @@ if (!$m) {
 
                 <h5 class="section-title">Dados pessoais</h5>
                 <div class="row">
+                    <div class="input-field col s12 m6">
+                        <select id="vinculo" name="vinculo">
+                            <option value="">— não informado —</option>
+                            <?php foreach (todosOsVinculos() as $v): ?>
+                                <option value="<?= htmlspecialchars($v) ?>"
+                                    <?= trim((string)($m['vinculo'] ?? '')) === $v ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($v) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <label>Vínculo com a associação</label>
+                    </div>
                     <div class="input-field col s12">
                         <input id="nome_completo" name="nome_completo" type="text" value="<?= htmlspecialchars($m['nome_completo']) ?>" required>
                         <label for="nome_completo" class="active">Nome completo</label>
@@ -189,5 +206,11 @@ if (!$m) {
         </div>
     </div>
 </main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        M.FormSelect.init(document.querySelectorAll('select'));
+    });
+</script>
 </body>
 </html>

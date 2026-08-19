@@ -36,6 +36,10 @@ return [
     // Texto fixo do evento (aparece no topo do formulário)
     'evento' => 'Assembleia de Fundação – 23/07',
 
+    // Fuso horário usado para decidir se a data da assembleia já passou.
+    // Sem isso, um servidor em UTC viraria o dia às 21h no horário de Brasília.
+    'timezone' => 'America/Sao_Paulo',
+
     // Proteção do login do backoffice contra tentativas em massa (força bruta).
     // Se algum valor for omitido, o sistema usa o padrão indicado no comentário.
     'seguranca' => [

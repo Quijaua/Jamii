@@ -42,6 +42,27 @@ body {
     margin: 24px 0;
 }
 
+.vinculo-box {
+    background: #f5f5f5;
+    border-left: 4px solid #1565c0;
+    padding: 16px 16px 4px;
+    border-radius: 4px;
+    margin: 8px 0 24px;
+}
+
+.badge-vinculo {
+    background-color: #1565c0;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: .75rem;
+    white-space: nowrap;
+}
+
+.badge-vinculo.associado {
+    background-color: #78909c;
+}
+
 .footer-note {
     text-align: center;
     color: #78909c;

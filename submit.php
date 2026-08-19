@@ -11,12 +11,24 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// O estado do formulário é reconferido aqui: sem isso, um formulário deixado
+// aberto numa aba antes do fechamento ainda conseguiria gravar uma ficha.
+$settings = getSettings();
+
+if (!formularioAberto($settings)) {
+    header('Location: index.php');
+    exit;
+}
+
+$vinculosPermitidos = vinculosDisponiveis($settings);
+
 function campo(string $nome): string
 {
     return trim($_POST[$nome] ?? '');
 }
 
 $dados = [
+    'vinculo'       => campo('vinculo'),
     'nome_completo' => campo('nome_completo'),
     'nacionalidade' => campo('nacionalidade'),
     'estado_civil'  => campo('estado_civil'),
@@ -41,6 +53,7 @@ $aceite = isset($_POST['declaracao_aceite']) && $_POST['declaracao_aceite'] === 
 
 // Rótulos em português usados nas mensagens de erro
 $rotulos = [
+    'vinculo'       => 'Vínculo com a associação',
     'nome_completo' => 'Nome completo',
     'nacionalidade' => 'Nacionalidade',
     'estado_civil'  => 'Estado civil',
@@ -73,6 +86,15 @@ if ($emailInvalido && !in_array('email', $faltantes, true)) {
     $faltantes[] = 'email';
 }
 
+// Vínculo precisa ser uma das opções válidas AGORA. É o que impede alguém de
+// forjar "Fundador(a)" depois que a assembleia já passou.
+if ($dados['vinculo'] !== '' && !in_array($dados['vinculo'], $vinculosPermitidos, true)) {
+    $dados['vinculo'] = '';
+    if (!in_array('vinculo', $faltantes, true)) {
+        $faltantes[] = 'vinculo';
+    }
+}
+
 $semAceite = !$aceite;
 
 if (!empty($faltantes) || $semAceite) {
@@ -89,17 +111,18 @@ try {
     $pdo = getDB();
     $stmt = $pdo->prepare("
         INSERT INTO members (
-            nome_completo, nacionalidade, estado_civil, profissao, cpf, rg_numero, rg_orgao, cin,
+            vinculo, nome_completo, nacionalidade, estado_civil, profissao, cpf, rg_numero, rg_orgao, cin,
             email, telefone, logradouro, numero, complemento, bairro, cidade, estado, cep,
             local_data, declaracao_aceite
         ) VALUES (
-            :nome_completo, :nacionalidade, :estado_civil, :profissao, :cpf, :rg_numero, :rg_orgao, :cin,
+            :vinculo, :nome_completo, :nacionalidade, :estado_civil, :profissao, :cpf, :rg_numero, :rg_orgao, :cin,
             :email, :telefone, :logradouro, :numero, :complemento, :bairro, :cidade, :estado, :cep,
             :local_data, :declaracao_aceite
         )
     ");
 
     $stmt->execute([
+        ':vinculo'       => $dados['vinculo'],
         ':nome_completo' => $dados['nome_completo'],
         ':nacionalidade' => $dados['nacionalidade'],
         ':estado_civil'  => $dados['estado_civil'],
@@ -179,6 +202,7 @@ function enviarEmailNotificacao(array $config, array $dados): void
 function montarCorpoEmail(array $dados): string
 {
     $corpo  = "Uma nova ficha de qualificação foi preenchida:\n\n";
+    $corpo .= "Vínculo: {$dados['vinculo']}\n";
     $corpo .= "Nome completo: {$dados['nome_completo']}\n";
     $corpo .= "Nacionalidade: {$dados['nacionalidade']}\n";
     $corpo .= "Estado civil: {$dados['estado_civil']}\n";

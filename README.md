@@ -22,6 +22,49 @@ com login e exportação para XLSX.
 - Integração com o **ViaCEP** (API pública e gratuita) para autopreenchimento
   de endereço a partir do CEP.
 
+## Ciclo de vida das inscrições
+
+O formulário público tem dois interruptores, ambos na tela **Configurações** do
+backoffice. Eles são independentes:
+
+**1. Formulário aberto ou fechado.** A chave geral. Com ele fechado, quem abrir
+o link não vê formulário nenhum — vê a mensagem que você escreveu no painel
+(deixando em branco, o sistema usa um texto padrão de "inscrições encerradas").
+O fechamento também vale no servidor: um formulário deixado aberto numa aba
+antes do fechamento não consegue gravar nada.
+
+**2. Fim das inscrições de fundador.** Cadastre a **data da assembleia de
+fundação** e escolha como encerrar:
+
+| Opção | O que faz |
+|---|---|
+| Automaticamente | Encerra no dia seguinte à assembleia. No dia da assembleia ainda dá para assinar. |
+| Manter abertas | Ignora a data — útil se a assembleia for adiada. |
+| Encerrar agora | Ignora a data e encerra na hora. |
+
+Encerradas as inscrições de fundador, **o formulário continua no ar**, mas passa
+a cadastrar associados: no campo de vínculo, "Fundador(a)" dá lugar a
+"Associado(a)", o título da página muda para "Ficha de Qualificação de
+Associados" e a validação do servidor recusa qualquer tentativa de enviar
+"Fundador(a)" fora do prazo. **As fichas já enviadas não mudam.**
+
+A comparação de datas usa o fuso configurado em `config/config.php`
+(`'timezone' => 'America/Sao_Paulo'`). Sem isso, um servidor em UTC viraria o
+dia às 21h no horário de Brasília e encerraria as inscrições um dia antes.
+
+## Vínculo com a associação
+
+Toda ficha registra **um** vínculo, escolhido pela própria pessoa no topo do
+formulário: **Fundador(a)** (ou **Associado(a)**, depois da assembleia),
+**Diretoria** ou **Conselho Fiscal**. O vínculo aparece como coluna no painel,
+serve de filtro na listagem, vai para a planilha `.xlsx` (inclusive exportando
+só um vínculo) e pode ser corrigido pelo administrador na edição da ficha.
+
+Como a escolha é única, quem se marcou como Diretoria ou Conselho Fiscal antes
+da assembleia **também conta como membro fundador** nas barras de progresso da
+meta — só "Associado(a)" fica de fora. Fichas preenchidas antes da existência
+desse campo são migradas automaticamente como "Fundador(a)".
+
 ## Novidades desta versão
 
 - Campo **CIN** (Carteira de Identidade Nacional, o novo documento que está
@@ -45,7 +88,8 @@ associacao/
 │   ├── session.php            <- sessão com cookie HttpOnly/SameSite/Secure
 │   ├── csrf.php                <- token anti-CSRF dos formulários do painel
 │   ├── auth.php                 <- autenticação + limite de tentativas de login
-│   └── XLSXWriter.php            <- gerador de planilhas .xlsx
+│   ├── inscricao.php             <- regras de abertura do formulário e vínculos
+│   └── XLSXWriter.php             <- gerador de planilhas .xlsx
 ├── assets/style.css           <- ajustes visuais complementares
 ├── admin/
 │   ├── login.php               <- tela de login
@@ -123,7 +167,10 @@ associacao/
    - Buscar membros por nome, CPF ou e-mail
    - Visualizar e editar qualquer ficha
    - Excluir uma ficha
-   - Baixar todos os dados em uma planilha `.xlsx` (botão "Baixar XLSX")
+   - Filtrar por vínculo (fundador, associado, diretoria, conselho fiscal)
+   - Baixar todos os dados em uma planilha `.xlsx` (ou só um vínculo)
+   - Abrir/fechar o formulário público e escrever a mensagem de encerramento
+   - Cadastrar a data da assembleia e encerrar as inscrições de fundador
    - Configurar a meta de associados e testar o envio de e-mail (menu Configurações)
 
 ## Segurança — o que já vem embutido
@@ -278,7 +325,13 @@ marcar a declaração, ao voltar para o formulário:
   outro e-mail.
 - **Alterar campos do formulário**: os campos ficam em `index.php` (visual),
   `submit.php` (validação/gravação) e a tabela `members` em `includes/db.php`
-  (estrutura do banco) — as três partes precisam ser atualizadas juntas.
+  (estrutura do banco) — as três partes precisam ser atualizadas juntas. Colunas
+  novas entram na chamada de `garantirColunas()`, que cria o que estiver
+  faltando em bancos antigos sem precisar de migração manual.
+- **Mudar os vínculos oferecidos** (Diretoria, Conselho Fiscal etc.): tudo fica
+  em `includes/inscricao.php`, nas constantes `VINCULO_*` e nas funções
+  `vinculosDisponiveis()` e `todosOsVinculos()`. Como as telas leem dali, mudar
+  num lugar só já reflete no formulário, no painel e na exportação.
 
 ---
 

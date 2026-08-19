@@ -4,9 +4,20 @@ require_once __DIR__ . '/../includes/XLSXWriter.php';
 requireLogin();
 
 $pdo = getDB();
-$membros = $pdo->query("SELECT * FROM members ORDER BY created_at DESC")->fetchAll();
+
+// Respeita o filtro de vínculo escolhido no painel, se houver.
+$filtroVinculo = trim($_GET['vinculo'] ?? '');
+if ($filtroVinculo !== '' && in_array($filtroVinculo, todosOsVinculos(), true)) {
+    $stmt = $pdo->prepare("SELECT * FROM members WHERE vinculo = ? ORDER BY created_at DESC");
+    $stmt->execute([$filtroVinculo]);
+    $membros = $stmt->fetchAll();
+} else {
+    $filtroVinculo = '';
+    $membros = $pdo->query("SELECT * FROM members ORDER BY created_at DESC")->fetchAll();
+}
 
 $headers = [
+    'Vínculo',
     'Nome completo', 'Nacionalidade', 'Estado civil', 'Profissão', 'CPF', 'RG (número)', 'RG (órgão emissor)', 'CIN',
     'E-mail', 'Telefone', 'CEP', 'Logradouro', 'Número', 'Complemento', 'Bairro', 'Cidade', 'Estado',
     'Local e data', 'Declaração aceita', 'Recebido em',
@@ -15,6 +26,7 @@ $headers = [
 $rows = [];
 foreach ($membros as $m) {
     $rows[] = [
+        $m['vinculo'] ?? '',
         $m['nome_completo'],
         $m['nacionalidade'],
         $m['estado_civil'],
@@ -42,7 +54,10 @@ $tmpFile = tempnam(sys_get_temp_dir(), 'membros_') . '.xlsx';
 $writer = new XLSXWriter($headers, $rows);
 $writer->save($tmpFile);
 
-$filename = 'membros_fundadores_' . date('Y-m-d_His') . '.xlsx';
+$sufixo = $filtroVinculo !== ''
+    ? '_' . preg_replace('/[^a-z0-9]+/i', '-', strtolower($filtroVinculo))
+    : '';
+$filename = 'membros_fundadores' . $sufixo . '_' . date('Y-m-d_His') . '.xlsx';
 
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="' . $filename . '"');

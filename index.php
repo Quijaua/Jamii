@@ -18,6 +18,12 @@ unset($_SESSION['flash_dados'], $_SESSION['flash_faltantes'], $_SESSION['flash_s
 
 $mostrarErro = isset($_GET['erro']);
 
+$settings   = getSettings();
+$aberto     = formularioAberto($settings);
+$vinculos   = vinculosDisponiveis($settings);
+$titulo     = tituloFormulario($settings);
+$encerrouFundadores = fundadoresEncerrados($settings);
+
 function val(array $dados, string $campo): string
 {
     return htmlspecialchars($dados[$campo] ?? '');
@@ -32,7 +38,41 @@ function selecionado(array $dados, string $campo, string $valorOpcao): string
 {
     return (($dados[$campo] ?? '') === $valorOpcao) ? 'selected' : '';
 }
+
+function marcado(array $dados, string $campo, string $valorOpcao): string
+{
+    return (($dados[$campo] ?? '') === $valorOpcao) ? 'checked' : '';
+}
 ?>
+<?php if (!$aberto): ?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscrições encerradas — <?= htmlspecialchars($config['app_name']) ?></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="brand-header">
+    <div class="container">
+        <h4><?= htmlspecialchars($titulo) ?></h4>
+    </div>
+</header>
+<main class="container">
+    <div class="card">
+        <div class="card-content center-align" style="padding: 48px 16px;">
+            <i class="material-icons grey-text text-darken-1" style="font-size: 64px;">lock</i>
+            <h5>Inscrições encerradas</h5>
+            <p style="max-width: 520px; margin: 16px auto 0; white-space: pre-line;"><?= htmlspecialchars(mensagemFormularioFechado($settings)) ?></p>
+        </div>
+    </div>
+</main>
+</body>
+</html>
+<?php exit; endif; ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -47,16 +87,24 @@ function selecionado(array $dados, string $campo, string $valorOpcao): string
 
 <header class="brand-header">
     <div class="container">
-        <h4>Ficha de Qualificação dos Membros Fundadores</h4>
-        <p><?= htmlspecialchars($config['evento']) ?></p>
+        <h4><?= htmlspecialchars($titulo) ?></h4>
+        <?php if (!$encerrouFundadores): ?>
+            <p><?= htmlspecialchars($config['evento']) ?></p>
+        <?php endif; ?>
     </div>
 </header>
 
 <main class="container">
     <div class="card form-card">
         <div class="card-content">
-            <p>Solicitamos que todos os membros fundadores preencham as informações abaixo, conforme exigência
-                para o registro da associação.</p>
+            <?php if ($encerrouFundadores): ?>
+                <p>A assembleia de fundação já foi realizada, então este formulário passou a receber
+                    o cadastro de <strong>novos associados</strong>. Preencha as informações abaixo
+                    conforme exigência para o registro da associação.</p>
+            <?php else: ?>
+                <p>Solicitamos que todos os membros fundadores preencham as informações abaixo, conforme exigência
+                    para o registro da associação.</p>
+            <?php endif; ?>
             <p><span class="red-text">*</span> Campos obrigatórios.</p>
 
             <?php if ($mostrarErro && $erroTecnico): ?>
@@ -80,6 +128,26 @@ function selecionado(array $dados, string $campo, string $valorOpcao): string
             <?php endif; ?>
 
             <form action="submit.php" method="POST">
+
+                <h5 class="section-title">Vínculo com a associação</h5>
+                <div class="vinculo-box <?= in_array('vinculo', $faltantes, true) ? 'red lighten-5' : '' ?>">
+                    <p style="margin-top: 0;">Marque como você participa da associação
+                        <span class="red-text">*</span></p>
+                    <?php foreach ($vinculos as $opcao): ?>
+                        <p>
+                            <label>
+                                <input name="vinculo" type="radio" value="<?= htmlspecialchars($opcao) ?>"
+                                       required <?= marcado($dadosAnteriores, 'vinculo', $opcao) ?> />
+                                <span><?= htmlspecialchars($opcao) ?></span>
+                            </label>
+                        </p>
+                    <?php endforeach; ?>
+                    <?php if ($encerrouFundadores): ?>
+                        <p class="grey-text" style="margin-bottom: 0; font-size: .9rem;">
+                            As inscrições de membro fundador se encerraram com a assembleia de fundação.
+                        </p>
+                    <?php endif; ?>
+                </div>
 
                 <h5 class="section-title">Dados pessoais</h5>
                 <div class="row">

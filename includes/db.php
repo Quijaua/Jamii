@@ -3,6 +3,31 @@
  * Conexão PDO com SQLite + criação automática das tabelas.
  */
 
+require_once __DIR__ . '/inscricao.php';
+
+/**
+ * Cria as colunas que ainda não existirem na tabela e devolve os nomes das que
+ * foram efetivamente criadas. É assim que o sistema evolui o banco de bancos
+ * antigos sem precisar de migração manual.
+ */
+function garantirColunas(PDO $pdo, string $tabela, array $colunas): array
+{
+    $existentes = [];
+    foreach ($pdo->query("PRAGMA table_info($tabela)")->fetchAll() as $col) {
+        $existentes[$col['name']] = true;
+    }
+
+    $criadas = [];
+    foreach ($colunas as $nome => $definicao) {
+        if (!isset($existentes[$nome])) {
+            $pdo->exec("ALTER TABLE $tabela ADD COLUMN $nome $definicao");
+            $criadas[] = $nome;
+        }
+    }
+
+    return $criadas;
+}
+
 function getDB(): PDO
 {
     static $pdo = null;
@@ -42,17 +67,18 @@ function getDB(): PDO
             )
         ");
 
-        // Compatibilidade com bancos criados antes da coluna 'cin' existir
-        $colunas = $pdo->query("PRAGMA table_info(members)")->fetchAll();
-        $temCin = false;
-        foreach ($colunas as $col) {
-            if ($col['name'] === 'cin') {
-                $temCin = true;
-                break;
-            }
-        }
-        if (!$temCin) {
-            $pdo->exec("ALTER TABLE members ADD COLUMN cin TEXT");
+        // Compatibilidade com bancos criados por versões anteriores do sistema
+        $criadas = garantirColunas($pdo, 'members', [
+            'cin'     => 'TEXT',
+            'vinculo' => 'TEXT',
+        ]);
+
+        // Todas as fichas que existiam antes do campo 'vínculo' foram preenchidas
+        // quando o formulário só aceitava membros fundadores — o backfill roda uma
+        // única vez, no exato momento em que a coluna é criada.
+        if (in_array('vinculo', $criadas, true)) {
+            $stmt = $pdo->prepare("UPDATE members SET vinculo = ? WHERE vinculo IS NULL OR vinculo = ''");
+            $stmt->execute([VINCULO_FUNDADOR]);
         }
 
         $pdo->exec("
@@ -71,6 +97,18 @@ function getDB(): PDO
             )
         ");
         $pdo->exec("INSERT OR IGNORE INTO settings (id, meta_associados) VALUES (1, 0)");
+
+        // Controles do formulário público (ver includes/inscricao.php):
+        //  - formulario_aberto:    chave geral liga/desliga do formulário
+        //  - mensagem_fechado:     texto exibido a quem abrir o link com ele fechado
+        //  - data_assembleia:      AAAA-MM-DD; passada a data, encerra os fundadores
+        //  - fundadores_modo:      'auto' segue a data | 'aberto' e 'encerrado' forçam
+        garantirColunas($pdo, 'settings', [
+            'formulario_aberto' => "INTEGER NOT NULL DEFAULT 1",
+            'mensagem_fechado'  => "TEXT",
+            'data_assembleia'   => "TEXT",
+            'fundadores_modo'   => "TEXT NOT NULL DEFAULT 'auto'",
+        ]);
 
         // Registro de tentativas de login, usado para bloquear ataques de
         // força bruta contra o backoffice (ver includes/auth.php).
@@ -91,13 +129,51 @@ function getDB(): PDO
 }
 
 /**
- * Retorna as configurações atuais (atualmente, apenas a meta de associados).
+ * Retorna as configurações atuais do sistema (meta, estado do formulário,
+ * data da assembleia etc.), já com valores padrão para bancos recém-criados.
  */
 function getSettings(): array
 {
+    $padrao = [
+        'id'                => 1,
+        'meta_associados'   => 0,
+        'formulario_aberto' => 1,
+        'mensagem_fechado'  => '',
+        'data_assembleia'   => '',
+        'fundadores_modo'   => 'auto',
+    ];
+
     $pdo = getDB();
     $row = $pdo->query('SELECT * FROM settings WHERE id = 1')->fetch();
-    return $row ?: ['id' => 1, 'meta_associados' => 0];
+
+    return array_merge($padrao, $row ?: []);
+}
+
+/**
+ * Grava as configurações do formulário público e da assembleia.
+ * Só as chaves reconhecidas são aceitas — nada vem direto do $_POST.
+ */
+function updateSettings(array $valores): void
+{
+    $permitidas = ['meta_associados', 'formulario_aberto', 'mensagem_fechado',
+                   'data_assembleia', 'fundadores_modo'];
+
+    $campos = [];
+    $params = [];
+    foreach ($permitidas as $chave) {
+        if (array_key_exists($chave, $valores)) {
+            $campos[] = "$chave = ?";
+            $params[] = $valores[$chave];
+        }
+    }
+
+    if (!$campos) {
+        return;
+    }
+
+    $pdo = getDB();
+    $stmt = $pdo->prepare('UPDATE settings SET ' . implode(', ', $campos) . ' WHERE id = 1');
+    $stmt->execute($params);
 }
 
 /**
