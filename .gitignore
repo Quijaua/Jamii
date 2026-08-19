@@ -1,0 +1,52 @@
+# ---------------------------------------------------------------------------
+# Banco de dados dos associados — NUNCA versionar.
+# Contém CPF, RG e endereço dos membros fundadores; subir isso para o GitHub
+# seria um vazamento de dados pessoais (LGPD), mesmo em repositório privado.
+# O arquivo é recriado sozinho pelo sistema na primeira execução.
+# ---------------------------------------------------------------------------
+database.sqlite
+*.sqlite
+*.sqlite3
+
+# Arquivos temporários que o SQLite cria ao gravar, na mesma pasta do banco
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*-journal
+*-wal
+*-shm
+
+# ---------------------------------------------------------------------------
+# Logs e arquivos gerados pelo servidor
+# ---------------------------------------------------------------------------
+*.log
+error_log
+
+# Configuração de PHP criada automaticamente por aaPanel/cPanel — é específica
+# do servidor onde o site está hospedado, não do projeto
+.user.ini
+
+# Planilhas exportadas, caso alguma seja salva na pasta do projeto
+membros_fundadores_*.xlsx
+
+# ---------------------------------------------------------------------------
+# Lixo de editor e de sistema operacional
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Scripts auxiliares gerados durante o desenvolvimento
+commit-jamii.sh
+
+# ---------------------------------------------------------------------------
+# ATENÇÃO: config/config.php continua versionado por opção.
+# Ele guarda a senha do SMTP — antes de cada commit, confira que só há
+# placeholders ali, ou o segredo vai parar no histórico do Git (onde não sai
+# mais com um simples "git rm").  Verifique com:  git diff config/config.php
+# ---------------------------------------------------------------------------
