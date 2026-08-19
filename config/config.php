@@ -35,4 +35,16 @@ return [
 
     // Texto fixo do evento (aparece no topo do formulário)
     'evento' => 'Assembleia de Fundação – 23/07',
+
+    // Proteção do login do backoffice contra tentativas em massa (força bruta).
+    // Se algum valor for omitido, o sistema usa o padrão indicado no comentário.
+    'seguranca' => [
+        // Falhas seguidas permitidas para o MESMO e-mail antes de bloquear (padrão: 5)
+        'max_tentativas_email' => 5,
+        // Falhas seguidas permitidas para o MESMO IP, somando todos os e-mails (padrão: 20).
+        // Mantenha folgado: atrás de proxy reverso vários acessos podem chegar com o mesmo IP.
+        'max_tentativas_ip'    => 20,
+        // Janela de tempo considerada, em minutos (padrão: 15)
+        'janela_minutos'       => 15,
+    ],
 ];

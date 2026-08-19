@@ -1,10 +1,9 @@
 <?php
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/session.php';
 $config = require __DIR__ . '/config/config.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+iniciarSessao();
 
 // Recupera dados de uma tentativa anterior que falhou (sem perder o que a pessoa digitou)
 $dadosAnteriores = $_SESSION['flash_dados'] ?? [];

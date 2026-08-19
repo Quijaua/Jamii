@@ -71,6 +71,20 @@ function getDB(): PDO
             )
         ");
         $pdo->exec("INSERT OR IGNORE INTO settings (id, meta_associados) VALUES (1, 0)");
+
+        // Registro de tentativas de login, usado para bloquear ataques de
+        // força bruta contra o backoffice (ver includes/auth.php).
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS login_attempts (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                email         TEXT NOT NULL,
+                ip            TEXT NOT NULL,
+                sucesso       INTEGER NOT NULL DEFAULT 0,
+                tentado_em    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts (email, tentado_em)");
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_login_attempts_ip    ON login_attempts (ip, tentado_em)");
     }
 
     return $pdo;

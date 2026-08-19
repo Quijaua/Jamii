@@ -8,6 +8,8 @@ $sucesso = false;
 $erro = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrfValidar();
+
     $meta = (int)($_POST['meta_associados'] ?? 0);
     if ($meta < 0) {
         $erro = 'A meta de associados não pode ser negativa.';
@@ -90,6 +92,7 @@ $metaAtingida = $meta > 0 && $totalAssinadas >= $meta;
                 quantos já preencheram e quantos já assinaram (aceitaram) a declaração.</p>
 
             <form method="POST" class="row" style="margin-bottom: 0;">
+                <?= csrfCampo() ?>
                 <div class="input-field col s12 m6">
                     <input id="meta_associados" name="meta_associados" type="number" min="0"
                            value="<?= $meta ?>">

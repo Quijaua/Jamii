@@ -10,6 +10,8 @@ $logSmtp = [];
 $destinoTeste = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrfValidar();
+
     $destinoTeste = trim($_POST['destino'] ?? '');
 
     if (!filter_var($destinoTeste, FILTER_VALIDATE_EMAIL)) {
@@ -108,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>Envie uma mensagem de teste para conferir se as configurações de e-mail estão funcionando.</p>
 
             <form method="POST" class="row" style="margin-bottom: 0;">
+                <?= csrfCampo() ?>
                 <div class="input-field col s12 m8">
                     <input id="destino" name="destino" type="email" required value="<?= htmlspecialchars($destinoTeste) ?>">
                     <label for="destino" class="<?= $destinoTeste ? 'active' : '' ?>">E-mail de destino do teste</label>

@@ -6,6 +6,9 @@ $pdo = getDB();
 
 $id = (int)($_GET['id'] ?? 0);
 
+// Qualquer POST desta tela (salvar ou excluir) precisa trazer o token da sessão.
+csrfValidar();
+
 // Exclusão
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'excluir') {
     $stmt = $pdo->prepare('DELETE FROM members WHERE id = ?');
@@ -78,6 +81,7 @@ if (!$m) {
     <div class="card form-card">
         <div class="card-content">
             <form method="POST">
+                <?= csrfCampo() ?>
                 <input type="hidden" name="acao" value="salvar">
 
                 <h5 class="section-title">Dados pessoais</h5>
@@ -176,6 +180,7 @@ if (!$m) {
             </form>
 
             <form method="POST" onsubmit="return confirm('Tem certeza que deseja excluir esta ficha? Esta ação não pode ser desfeita.');" style="margin-top: 24px;">
+                <?= csrfCampo() ?>
                 <input type="hidden" name="acao" value="excluir">
                 <button class="btn waves-effect waves-light red darken-1" type="submit">
                     Excluir ficha <i class="material-icons right">delete</i>

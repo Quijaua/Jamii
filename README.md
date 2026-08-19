@@ -42,8 +42,10 @@ associacao/
 ├── config/config.php        <- configurações (e-mail, nome do app etc.)
 ├── includes/
 │   ├── db.php                <- conexão SQLite + criação de tabelas
-│   ├── auth.php               <- autenticação do backoffice (sessão)
-│   └── XLSXWriter.php          <- gerador de planilhas .xlsx
+│   ├── session.php            <- sessão com cookie HttpOnly/SameSite/Secure
+│   ├── csrf.php                <- token anti-CSRF dos formulários do painel
+│   ├── auth.php                 <- autenticação + limite de tentativas de login
+│   └── XLSXWriter.php            <- gerador de planilhas .xlsx
 ├── assets/style.css           <- ajustes visuais complementares
 ├── admin/
 │   ├── login.php               <- tela de login
@@ -123,6 +125,55 @@ associacao/
    - Excluir uma ficha
    - Baixar todos os dados em uma planilha `.xlsx` (botão "Baixar XLSX")
    - Configurar a meta de associados e testar o envio de e-mail (menu Configurações)
+
+## Segurança — o que já vem embutido
+
+Estas proteções são automáticas, não exigem configuração e valem para todo o
+backoffice:
+
+- **Token anti-CSRF em todas as ações do backoffice.** Cada formulário do
+  painel (login, salvar meta, editar ficha, excluir ficha, testar e-mail) e o
+  link de sair carregam um token secreto ligado à sessão. Sem ele, a ação é
+  recusada com um erro 403 explicativo. Isso impede que um site malicioso faça
+  o navegador de um administrador já logado executar operações sem que ele
+  perceba — por exemplo, excluir uma ficha através de um link ou imagem
+  escondida. Ao criar um novo formulário no painel, basta usar
+  `<?= csrfCampo() ?>` dentro do `<form>` e chamar `csrfValidar();` no início
+  do arquivo que processa o POST (`includes/csrf.php`).
+
+- **Sessão endurecida** (`includes/session.php`). O cookie de sessão sai com
+  `HttpOnly` (não pode ser lido por JavaScript), `SameSite=Lax` (não é enviado
+  em requisições vindas de outros sites) e `Secure` quando o site está em
+  HTTPS. O identificador de sessão só é aceito via cookie, nunca pela URL.
+  Após um login bem-sucedido o identificador é trocado
+  (`session_regenerate_id`), de modo que um ID capturado antes do login deixa
+  de valer depois dele (proteção contra *session fixation*).
+
+- **Limite de tentativas de login.** Cada tentativa fica registrada na tabela
+  `login_attempts`. Depois de **5 falhas** para o mesmo e-mail dentro de
+  **15 minutos**, novas tentativas são recusadas até a janela passar — mesmo
+  com a senha correta —, e a tela informa quanto tempo falta. Há também um
+  teto por IP (20 falhas na mesma janela), propositalmente mais folgado porque
+  atrás de proxy reverso vários acessos podem chegar com o mesmo IP. Um login
+  bem-sucedido zera o histórico de falhas daquele e-mail, e registros com mais
+  de 24 horas são descartados sozinhos.
+
+  Para ajustar os limites, edite o bloco `seguranca` em `config/config.php`:
+  ```php
+  'seguranca' => [
+      'max_tentativas_email' => 5,   // falhas por e-mail antes de bloquear
+      'max_tentativas_ip'    => 20,  // falhas por IP antes de bloquear
+      'janela_minutos'       => 15,  // janela de tempo considerada
+  ],
+  ```
+  Se o bloco não existir (instalações antigas), esses mesmos valores são usados
+  como padrão.
+
+  **Destravar um administrador antes da hora**, caso alguém se tranque fora:
+  ```bash
+  sqlite3 /caminho/do/projeto/database.sqlite \
+    "DELETE FROM login_attempts WHERE email = 'email@daassociacao.org.br';"
+  ```
 
 ## Segurança — recomendações antes de colocar em produção
 

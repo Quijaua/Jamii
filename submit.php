@@ -1,11 +1,10 @@
 <?php
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/SmtpMailer.php';
+require_once __DIR__ . '/includes/session.php';
 $config = require __DIR__ . '/config/config.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+iniciarSessao();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');

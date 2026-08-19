@@ -43,7 +43,7 @@ $metaAtingida = $meta > 0 && $totalAssinadas >= $meta;
                 <a href="config.php" class="btn-flat white-text">
                     <i class="material-icons left">settings</i> Configurações
                 </a>
-                <a href="logout.php" class="btn-flat white-text">
+                <a href="logout.php?<?= csrfParametro() ?>" class="btn-flat white-text">
                     Sair <i class="material-icons right">exit_to_app</i>
                 </a>
             </div>

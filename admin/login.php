@@ -8,15 +8,35 @@ if (isLoggedIn()) {
 }
 
 $erro = null;
+$bloqueado = false;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrfValidar();
+
     $email = trim($_POST['email'] ?? '');
     $senha = $_POST['senha'] ?? '';
 
-    if (attemptLogin($email, $senha)) {
+    $espera = loginBloqueado($email);
+
+    if ($espera !== null) {
+        // Não tenta validar a senha enquanto o bloqueio estiver em vigor.
+        $bloqueado = true;
+        $erro = 'Muitas tentativas de login sem sucesso. Aguarde ' . formatarEspera($espera)
+              . ' antes de tentar novamente.';
+    } elseif (attemptLogin($email, $senha)) {
         header('Location: dashboard.php');
         exit;
+    } else {
+        $erro = 'E-mail ou senha inválidos.';
+
+        // Avisa quando a próxima falha vai travar o acesso.
+        $espera = loginBloqueado($email);
+        if ($espera !== null) {
+            $bloqueado = true;
+            $erro .= ' Por segurança, novas tentativas ficaram bloqueadas por '
+                   . formatarEspera($espera) . '.';
+        }
     }
-    $erro = 'E-mail ou senha inválidos.';
 }
 ?>
 <!DOCTYPE html>
@@ -45,15 +65,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST">
+                <?= csrfCampo() ?>
                 <div class="input-field">
-                    <input id="email" name="email" type="email" required>
-                    <label for="email">E-mail</label>
+                    <input id="email" name="email" type="email" required
+                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+                    <label for="email" class="<?= !empty($_POST['email']) ? 'active' : '' ?>">E-mail</label>
                 </div>
                 <div class="input-field">
                     <input id="senha" name="senha" type="password" required>
                     <label for="senha">Senha</label>
                 </div>
-                <button class="btn waves-effect waves-light blue darken-1" type="submit">
+                <button class="btn waves-effect waves-light blue darken-1" type="submit"
+                        <?= $bloqueado ? 'disabled' : '' ?>>
                     Entrar
                     <i class="material-icons right">login</i>
                 </button>
